@@ -5,21 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>预测结果</title>
     <!-- 引入Google字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <!-- 引入Font Awesome用于图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 全局样式 */
+        /* 定义CSS变量以简化主题管理 */
+        :root {
+            --font-primary: 'Noto Sans SC', sans-serif;
+            --font-secondary: 'Roboto Slab', serif;
+            --font-size-result: 2rem; /* 32px */
+            --font-size-label: 1.125rem; /* 18px */
+            --font-size-value: 1.5rem; /* 24px */
+            --line-height: 1.5;
+            --primary-color: #23a6d5;
+            --secondary-color: #23d5ab;
+            --text-color: #333;
+            --background-gradient: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            --bubble-border-gradient: linear-gradient(45deg, #f3ec78, #af4261);
+        }
+
+        /* 基础样式 */
         body {
-            font-family: 'Noto Sans SC', sans-serif;
+            font-family: var(--font-primary);
+            font-size: 16px;
+            line-height: var(--line-height);
+            color: var(--text-color);
             margin: 0;
             padding: 0;
-            overflow: hidden; /* 隐藏canvas滚动条 */
+            overflow: hidden; /* 隐藏滚动条 */
             position: relative;
             height: 100vh;
             width: 100vw;
             /* 动态渐变背景 */
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background: var(--background-gradient);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
+            /* 调整字体平滑 */
+            -webkit-font-smoothing: subpixel-antialiased;
+            -moz-osx-font-smoothing: auto;
         }
 
         /* 动态渐变动画 */
@@ -42,141 +65,265 @@
 
         /* 容器样式 */
         .container {
-            position: relative;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 30px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            position: relative; /* 相对定位，以便内部绝对定位元素相对于容器定位 */
             width: 100%;
-            max-width: 600px;
-            box-sizing: border-box;
+            height: 100%;
             z-index: 1; /* 确保内容在canvas之上 */
-            margin: 50px auto;
-        }
-
-        /* 标题样式 */
-        .container h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #333333;
-            font-size: 28px;
-        }
-
-        /* 数据项样式 */
-        .data-item {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* 允许气泡换行 */
+            gap: 20px; /* 气泡间距 */
         }
 
-        .data-item:hover {
-            background-color: #f1f1f1;
-        }
-
-        .data-item label {
-            font-weight: 500;
-            color: #555555;
-        }
-
-        .data-item span {
-            color: #333333;
-        }
-
-        /* 结果样式 */
+        /* 预测结果样式 */
         .result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            margin-top: 30px;
+            opacity: 0;
+            transition: opacity 1s ease;
+            z-index: 3; /* 提高z-index确保在气泡之上 */
+            padding: 20px 30px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.8); /* 增加不透明度 */
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
-        .result p {
-            font-size: 22px;
+        .result.show {
+            opacity: 1;
+        }
+
+        /* SVG渐变文本样式 */
+        .result svg {
+            width: 100%;
+            height: auto;
+            max-width: 800px; /* 增加最大宽度以适应更大的文本 */
+        }
+
+        .gradient-text {
+            fill: url(#rainbow-gradient);
+            font-family: var(--font-secondary);
+            font-size: 4rem; /* 调整字体大小为4rem */
             font-weight: 700;
-            margin: 0;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: inline-block;
-            transition: transform 0.2s;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* 减少文字阴影 */
+            text-rendering: optimizeLegibility; /* 优化文本渲染 */
+            transition: fill 15s linear infinite; /* 动态渐变动画 */
         }
 
-        .result p:hover {
-            transform: scale(1.05);
-        }
-
-        /* 高质量结果样式：动态彩虹渐变 */
-        .high-quality {
-            background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000);
-            background-size: 1600% 1600%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: rainbow-animation 10s ease infinite;
-        }
-
+        /* 定义渐变动画（可选） */
         @keyframes rainbow-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% { stop-color: #ff0000; }
+            14% { stop-color: #ff7f00; }
+            28% { stop-color: #ffff00; }
+            42% { stop-color: #00ff00; }
+            56% { stop-color: #0000ff; }
+            70% { stop-color: #4b0082; }
+            84% { stop-color: #8f00ff; }
+            100% { stop-color: #ff0000; }
         }
 
         /* 低质量结果样式 */
         .low-quality {
-            background-color: #ffe6e6;
+            background-color: rgba(255, 230, 230, 0.9);
             color: #cc0000;
+            border: 2px solid #ffcccc;
+            font-size: 2rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 10px;
         }
 
-        /* 按钮样式 */
+        /* 气泡样式 */
+        .bubble {
+            position: relative; /* 便于定位图标 */
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            padding: 25px;
+            width: 160px;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            transition: transform 1.5s ease, opacity 1.5s ease;
+            border: 2px solid;
+            border-image-slice: 1;
+            border-image-source: var(--bubble-border-gradient);
+            animation: rotateBubble 20s linear infinite; /* 添加旋转动画 */
+        }
+
+        /* 气泡旋转动画 */
+        @keyframes rotateBubble {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 气泡出现动画 */
+        .bubble.animate {
+            opacity: 1;
+        }
+
+        /* 气泡移动动画 */
+        /* 气泡1：上左 */
+        @keyframes moveBubble1 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(-250px, -250px) scale(1);
+            }
+        }
+
+        /* 气泡2：上右 */
+        @keyframes moveBubble2 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(250px, -250px) scale(1);
+            }
+        }
+
+        /* 气泡3：右上 */
+        @keyframes moveBubble3 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(250px, 250px) scale(1);
+            }
+        }
+
+        /* 气泡4：右下 */
+        @keyframes moveBubble4 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(350px, 50px) scale(1);
+            }
+        }
+
+        /* 气泡5：左上 */
+        @keyframes moveBubble5 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(-350px, 50px) scale(1);
+            }
+        }
+
+        /* 气泡6：左下 */
+        @keyframes moveBubble6 {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                transform: translate(-250px, 250px) scale(1);
+            }
+        }
+
+        /* 气泡悬停效果 */
+        .bubble:hover {
+            transform: scale(1.1) rotate(45deg); /* 放大并旋转 */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        /* 气泡中的图标样式 */
+        .bubble .bubble-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        /* 返回按钮样式调整 */
         .back-button {
-            display: block;
-            margin: 30px auto 0;
-            padding: 12px 25px;
-            background-color: #007BFF;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 6px 14px; /* 缩小内边距 */
+            background-color: rgba(0, 123, 255, 0.7); /* 半透明蓝色 */
             color: #ffffff;
             text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 50px; /* 更圆的边角 */
+            font-size: 12px; /* 缩小字体大小 */
             text-align: center;
-            transition: background-color 0.3s, transform 0.2s;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 4; /* 确保在所有内容之上 */
+            cursor: pointer;
         }
 
         .back-button:hover {
-            background-color: #0056b3;
+            background-color: rgba(0, 86, 179, 0.8); /* 深蓝色 */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
         }
 
         .back-button:active {
-            transform: scale(0.98);
+            transform: scale(0.95) rotate(-2deg); /* 更明显的点击效果 */
         }
 
         /* 响应式设计 */
-        @media (max-width: 600px) {
-            .container {
+        @media (max-width: 800px) {
+            .bubble {
+                width: 140px;
+                height: 140px;
                 padding: 20px;
+                font-size: 14px;
             }
 
-            .container h1 {
-                font-size: 24px;
-            }
-
-            .data-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .data-item label,
-            .data-item span {
-                font-size: 16px;
-            }
-
-            .result p {
-                font-size: 20px;
+            .result svg text {
+                font-size: 3rem; /* 调整字体大小 */
             }
 
             .back-button {
-                font-size: 14px;
-                padding: 10px 20px;
+                font-size: 10px;
+                padding: 5px 12px;
             }
+        }
+
+        @media (max-width: 500px) {
+            .bubble {
+                width: 120px;
+                height: 120px;
+                padding: 15px;
+                font-size: 12px;
+            }
+
+            .result svg text {
+                font-size: 2.5rem; /* 调整字体大小 */
+            }
+
+            .back-button {
+                font-size: 8px;
+                padding: 4px 10px;
+            }
+        }
+
+        /* 星星粒子样式 */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.3; }
         }
     </style>
 </head>
@@ -185,304 +332,475 @@
     <!-- Canvas用于动态背景效果 -->
     <canvas id="background-canvas"></canvas>
 
-    <div class="container">
-        <h1>预测结果</h1>
+    <!-- 星星粒子容器 -->
+    <div id="stars-container"></div>
 
-        <!-- 显示输入的预测数据 -->
-        <div class="data-item">
-            <label>年份:</label>
+    <div class="container" id="bubble-container">
+        <!-- 气泡数据项，添加图标 -->
+        <div class="bubble bubble-year">
+            <i class="fas fa-calendar bubble-icon"></i>
+            <label>年份</label>
             <span>{{ year }}</span>
         </div>
-
-        <div class="data-item">
-            <label>粉丝数:</label>
+        <div class="bubble bubble-fans">
+            <i class="fas fa-users bubble-icon"></i>
+            <label>粉丝数</label>
             <span>{{ fans }}</span>
         </div>
-
-        <div class="data-item">
-            <label>点赞数:</label>
+        <div class="bubble bubble-likes">
+            <i class="fas fa-thumbs-up bubble-icon"></i>
+            <label>点赞数</label>
             <span>{{ likes }}</span>
         </div>
-
-        <div class="data-item">
-            <label>观看数:</label>
+        <div class="bubble bubble-views">
+            <i class="fas fa-video bubble-icon"></i>
+            <label>观看数</label>
             <span>{{ views }}</span>
         </div>
-
-        <div class="data-item">
-            <label>硬币数:</label>
+        <div class="bubble bubble-coins">
+            <i class="fas fa-coins bubble-icon"></i>
+            <label>硬币数</label>
             <span>{{ coins }}</span>
         </div>
-
-        <div class="data-item">
-            <label>收藏数:</label>
+        <div class="bubble bubble-collects">
+            <i class="fas fa-bookmark bubble-icon"></i>
+            <label>收藏数</label>
             <span>{{ collects }}</span>
         </div>
 
-        <!-- 显示预测结果 -->
-        <div class="result">
+        <!-- 预测结果 -->
+        <div class="result" id="prediction-result">
             {% if is_high_quality %}
-                <p class="high-quality">预测结果：有机会是百大</p>
+                <!-- 使用SVG实现渐变文本，并添加SMIL动画 -->
+                <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" aria-label="预测结果：有机会是百大">
+                    <defs>
+                        <linearGradient id="rainbow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#ff0000">
+                                <animate attributeName="stop-color" values="#ff0000;#ff7f00;#ffff00;#00ff00;#0000ff;#4b0082;#8f00ff;#ff0000" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="14%" stop-color="#ff7f00">
+                                <animate attributeName="stop-color" values="#ff7f00;#ffff00;#00ff00;#0000ff;#4b0082;#8f00ff;#ff0000;#ff7f00" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="28%" stop-color="#ffff00">
+                                <animate attributeName="stop-color" values="#ffff00;#00ff00;#0000ff;#4b0082;#8f00ff;#ff0000;#ff7f00;#ffff00" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="42%" stop-color="#00ff00">
+                                <animate attributeName="stop-color" values="#00ff00;#0000ff;#4b0082;#8f00ff;#ff0000;#ff7f00;#ffff00;#00ff00" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="56%" stop-color="#0000ff">
+                                <animate attributeName="stop-color" values="#0000ff;#4b0082;#8f00ff;#ff0000;#ff7f00;#ffff00;#00ff00;#0000ff" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="70%" stop-color="#4b0082">
+                                <animate attributeName="stop-color" values="#4b0082;#8f00ff;#ff0000;#ff7f00;#ffff00;#00ff00;#0000ff;#4b0082" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="84%" stop-color="#8f00ff">
+                                <animate attributeName="stop-color" values="#8f00ff;#ff0000;#ff7f00;#ffff00;#00ff00;#0000ff;#4b0082;#8f00ff" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="100%" stop-color="#ff0000">
+                                <animate attributeName="stop-color" values="#ff0000;#ff7f00;#ffff00;#00ff00;#0000ff;#4b0082;#8f00ff;#ff0000" dur="15s" repeatCount="indefinite" />
+                            </stop>
+                        </linearGradient>
+                    </defs>
+                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="gradient-text">预测结果：有机会是百大</text>
+                </svg>
             {% else %}
                 <p class="low-quality">预测结果：再接再厉</p>
             {% endif %}
         </div>
-
-        <!-- 返回按钮 -->
-        <a href="javascript:history.back()" class="back-button">返回</a>
     </div>
 
-    <!-- JavaScript用于动态背景效果 -->
+    <!-- 返回按钮 -->
+    <a href="javascript:history.back()" class="back-button" aria-label="返回上一页">返回</a>
+
+    <!-- JavaScript用于动态背景效果和气泡动画 -->
     <script>
-        const canvas = document.getElementById('background-canvas');
-        const ctx = canvas.getContext('2d');
+        // 动态背景和粒子效果
+        (() => {
+            const canvas = document.getElementById('background-canvas');
+            const ctx = canvas.getContext('2d');
 
-        // 设置canvas大小
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
+            // 设置canvas大小
+            const resizeCanvas = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
 
-        // 定义爱心类
-        class Heart {
-            constructor(x, y, isSpread = false) {
-                this.x = x;
-                this.y = y;
-                this.size = isSpread ? 10 : Math.random() * 20 + 10; // 基础爱心大小或扩散爱心初始大小
-                this.maxSize = isSpread ? 60 : 30; // 最大大小
-                this.growthRate = isSpread ? 1 : 0.5; // 增长速度
-                this.alpha = isSpread ? 0.5 : 0.8; // 初始透明度
-                this.fadeRate = isSpread ? 0.005 : 0.003; // 淡出速度
-                this.scale = 1;
-                this.scaleSpeed = 0.02; // 控制心跳效果的缩放速度
-                this.maxScale = 1.2; // 最大缩放比例
-                this.rotation = Math.random() * Math.PI * 2;
-                this.rotationSpeed = Math.random() * 0.02 - 0.01; // 随机旋转速度
-                // 使用粉色渐变
-                this.gradient = ctx.createRadialGradient(0, 0, this.size * 0.1, 0, 0, this.size);
-                this.gradient.addColorStop(0, 'rgba(255, 105, 180, 1)'); // 深粉色
-                this.gradient.addColorStop(1, 'rgba(255, 182, 193, 0)'); // 浅粉色透明
-            }
+            // 定义爱心类
+            class Heart {
+                constructor(x, y, isSpread = false) {
+                    this.x = x;
+                    this.y = y;
+                    this.size = isSpread ? 10 : Math.random() * 20 + 10;
+                    this.maxSize = isSpread ? 60 : 30;
+                    this.growthRate = isSpread ? 1 : 0.5;
+                    this.alpha = isSpread ? 0.5 : 0.8;
+                    this.fadeRate = isSpread ? 0.005 : 0.003;
+                    this.scale = 1;
+                    this.scaleSpeed = 0.02;
+                    this.maxScale = 1.2;
+                    this.rotation = Math.random() * Math.PI * 2;
+                    this.rotationSpeed = Math.random() * 0.02 - 0.01;
+                    this.gradient = ctx.createRadialGradient(0, 0, this.size * 0.1, 0, 0, this.size);
+                    this.gradient.addColorStop(0, 'rgba(255, 105, 180, 1)');
+                    this.gradient.addColorStop(1, 'rgba(255, 182, 193, 0)');
+                }
 
-            update() {
-                this.size += this.growthRate;
-                this.scale += this.scaleSpeed;
-                this.rotation += this.rotationSpeed;
-                this.alpha -= this.fadeRate;
+                update() {
+                    this.size += this.growthRate;
+                    this.scale += this.scaleSpeed;
+                    this.rotation += this.rotationSpeed;
+                    this.alpha -= this.fadeRate;
 
-                // 反转缩放方向以实现心跳效果
-                if (this.scale >= this.maxScale || this.scale <= 1) {
-                    this.scaleSpeed *= -1;
+                    if (this.scale >= this.maxScale || this.scale <= 1) {
+                        this.scaleSpeed *= -1;
+                    }
+                }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.rotation);
+                    ctx.scale(this.scale, this.scale);
+                    ctx.globalAlpha = this.alpha;
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, -this.size / 2);
+                    ctx.bezierCurveTo(this.size / 2, -this.size * 1.5, this.size * 1.5, this.size / 2, 0, this.size);
+                    ctx.bezierCurveTo(-this.size * 1.5, this.size / 2, -this.size / 2, -this.size * 1.5, 0, -this.size / 2);
+                    ctx.closePath();
+                    ctx.fillStyle = this.gradient;
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                isAlive() {
+                    return this.alpha > 0 && this.size < this.maxSize;
                 }
             }
 
-            draw(ctx) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.scale(this.scale, this.scale);
-                ctx.globalAlpha = this.alpha;
-
-                // 绘制心形路径
-                ctx.beginPath();
-                ctx.moveTo(0, -this.size / 2);
-                ctx.bezierCurveTo(this.size / 2, -this.size * 1.5, this.size * 1.5, this.size / 2, 0, this.size);
-                ctx.bezierCurveTo(-this.size * 1.5, this.size / 2, -this.size / 2, -this.size * 1.5, 0, -this.size / 2);
-                ctx.closePath();
-                ctx.fillStyle = this.gradient;
-                ctx.fill();
-                ctx.restore();
-            }
-
-            isAlive() {
-                return this.alpha > 0 && this.size < this.maxSize;
-            }
-        }
-
-        // 定义流星类
-        class ShootingStar {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                const startFromTop = Math.random() > 0.5;
-                this.x = startFromTop ? Math.random() * canvas.width : 0;
-                this.y = startFromTop ? 0 : Math.random() * canvas.height;
-                this.velocityX = Math.random() * 4 + (startFromTop ? 4 : 8);
-                this.velocityY = Math.random() * 4 + (startFromTop ? 8 : 4);
-                this.length = Math.random() * 150 + 50;
-                this.opacity = 1;
-                this.fadeRate = 0.02;
-                this.color = `hsl(${Math.random() * 360}, 100%, 90%)`;
-            }
-
-            update() {
-                this.x += this.velocityX;
-                this.y += this.velocityY;
-                this.opacity -= this.fadeRate;
-
-                if (this.x > canvas.width + this.length || this.y > canvas.height + this.length || this.opacity <= 0) {
+            // 定义流星类
+            class ShootingStar {
+                constructor() {
                     this.reset();
                 }
-            }
 
-            draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = this.opacity;
-                ctx.strokeStyle = this.color;
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(this.x - this.velocityX * (this.length / 100), this.y - this.velocityY * (this.length / 100));
-                ctx.stroke();
-
-                // 添加发光效果
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = this.color;
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        // 定义鼠标轨迹粒子类
-        class TrailParticle {
-            constructor(x, y, isClick = false) {
-                this.x = x;
-                this.y = y;
-                this.size = isClick ? Math.random() * 8 + 4 : Math.random() * 5 + 2; // 点击时增大粒子大小
-                this.alpha = isClick ? 0.9 : 0.7; // 点击时增加初始透明度
-                this.fadeRate = isClick ? 0.03 : 0.02; // 点击时增加淡出速度
-                // 使用淡粉色
-                this.color = `rgba(255, 105, 180, ${this.alpha})`;
-                // 粒子移动方向
-                this.velocity = {
-                    x: (Math.random() - 0.5) * (isClick ? 3 : 2), // 点击时增加速度
-                    y: (Math.random() - 0.5) * (isClick ? 3 : 2)
-                };
-            }
-
-            update() {
-                this.x += this.velocity.x;
-                this.y += this.velocity.y;
-                this.alpha -= this.fadeRate;
-                this.color = `rgba(255, 105, 180, ${this.alpha})`;
-            }
-
-            draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.restore();
-            }
-
-            isAlive() {
-                return this.alpha > 0;
-            }
-        }
-
-        // 存储所有动画对象
-        const hearts = [];
-        const shootingStars = [];
-        const trailParticles = [];
-
-        // 定时生成流星
-        function generateShootingStar() {
-            shootingStars.push(new ShootingStar());
-            const time = Math.random() * 2000 + 2000;
-            setTimeout(generateShootingStar, time);
-        }
-
-        generateShootingStar();
-
-        // 动态添加爱心
-        function addHeart(x, y, isSpread = false) {
-            hearts.push(new Heart(x, y, isSpread));
-            if (hearts.length > 300) { // 总爱心数量限制
-                hearts.shift();
-            }
-        }
-
-        // 动态添加轨迹粒子
-        function addTrailParticle(x, y, isClick = false) {
-            trailParticles.push(new TrailParticle(x, y, isClick));
-            if (trailParticles.length > 200) { // 粒子数量限制
-                trailParticles.shift();
-            }
-        }
-
-        // 监听鼠标移动
-        window.addEventListener('mousemove', (e) => {
-            addHeart(e.clientX, e.clientY); // 添加基础爱心
-            addHeart(e.clientX, e.clientY, true); // 添加扩散爱心
-            addTrailParticle(e.clientX, e.clientY); // 添加普通轨迹粒子
-        });
-
-        // 监听鼠标点击
-        window.addEventListener('click', (e) => {
-            addHeart(e.clientX, e.clientY, true); // 添加扩散爱心
-            addTrailParticle(e.clientX, e.clientY, true); // 添加点击轨迹粒子
-        });
-
-        // 监听触摸移动（移动设备）
-        window.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            addHeart(touch.clientX, touch.clientY); // 添加基础爱心
-            addHeart(touch.clientX, touch.clientY, true); // 添加扩散爱心
-            addTrailParticle(touch.clientX, touch.clientY); // 添加普通轨迹粒子
-        }, { passive: true });
-
-        // 监听触摸点击（移动设备）
-        window.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            addHeart(touch.clientX, touch.clientY, true); // 添加扩散爱心
-            addTrailParticle(touch.clientX, touch.clientY, true); // 添加点击轨迹粒子
-        });
-
-        // 动画循环
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 绘制和更新爱心
-            hearts.forEach((heart, index) => {
-                heart.update();
-                if (!heart.isAlive()) {
-                    hearts.splice(index, 1);
-                } else {
-                    heart.draw(ctx);
+                reset() {
+                    const startFromTop = Math.random() > 0.5;
+                    this.x = startFromTop ? Math.random() * canvas.width : 0;
+                    this.y = startFromTop ? 0 : Math.random() * canvas.height;
+                    this.velocityX = Math.random() * 4 + (startFromTop ? 4 : 8);
+                    this.velocityY = Math.random() * 4 + (startFromTop ? 8 : 4);
+                    this.length = Math.random() * 150 + 50;
+                    this.opacity = 1;
+                    this.fadeRate = 0.02;
+                    this.color = `hsl(${Math.random() * 360}, 100%, 90%)`;
                 }
-            });
 
-            // 绘制和更新轨迹粒子
-            trailParticles.forEach((particle, index) => {
-                particle.update();
-                if (!particle.isAlive()) {
-                    trailParticles.splice(index, 1);
-                } else {
-                    particle.draw(ctx);
+                update() {
+                    this.x += this.velocityX;
+                    this.y += this.velocityY;
+                    this.opacity -= this.fadeRate;
+
+                    if (this.x > canvas.width + this.length || this.y > canvas.height + this.length || this.opacity <= 0) {
+                        this.reset();
+                    }
                 }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x - this.velocityX * (this.length / 100), this.y - this.velocityY * (this.length / 100));
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = this.color;
+                    ctx.fill();
+
+                    // 添加尾迹渐变
+                    let gradient = ctx.createLinearGradient(this.x, this.y, this.x - this.velocityX * 10, this.y - this.velocityY * 10);
+                    gradient.addColorStop(0, this.color);
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x - this.velocityX * 10, this.y - this.velocityY * 10);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+            }
+
+            // 定义鼠标轨迹粒子类
+            class TrailParticle {
+                constructor(x, y, isClick = false) {
+                    this.x = x;
+                    this.y = y;
+                    this.size = isClick ? Math.random() * 8 + 4 : Math.random() * 5 + 2;
+                    this.alpha = isClick ? 0.9 : 0.7;
+                    this.fadeRate = isClick ? 0.03 : 0.02;
+                    this.color = `rgba(255, 105, 180, ${this.alpha})`;
+                    this.velocity = {
+                        x: (Math.random() - 0.5) * (isClick ? 3 : 2),
+                        y: (Math.random() - 0.5) * (isClick ? 3 : 2)
+                    };
+                }
+
+                update() {
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.alpha -= this.fadeRate;
+                    this.color = `rgba(255, 105, 180, ${this.alpha})`;
+                }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.alpha;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                isAlive() {
+                    return this.alpha > 0;
+                }
+            }
+
+            // 定义星星类
+            class Star {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 1;
+                    this.opacity = Math.random();
+                    this.speed = Math.random() * 0.5 + 0.2;
+                }
+
+                update() {
+                    this.y += this.speed;
+                    if (this.y > canvas.height) {
+                        this.reset();
+                    }
+                }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                isAlive() {
+                    return this.y <= canvas.height;
+                }
+            }
+
+            // 存储所有动画对象
+            const hearts = [];
+            const shootingStars = [];
+            const trailParticles = [];
+            const stars = [];
+
+            // 定时生成流星
+            function generateShootingStar() {
+                shootingStars.push(new ShootingStar());
+                const time = Math.random() * 2000 + 2000;
+                setTimeout(generateShootingStar, time);
+            }
+
+            generateShootingStar();
+
+            // 生成星星
+            function generateStars() {
+                for (let i = 0; i < 100; i++) {
+                    stars.push(new Star());
+                }
+            }
+
+            generateStars();
+
+            // 动态添加爱心
+            function addHeart(x, y, isSpread = false) {
+                hearts.push(new Heart(x, y, isSpread));
+                if (hearts.length > 300) {
+                    hearts.shift();
+                }
+            }
+
+            // 动态添加轨迹粒子
+            function addTrailParticle(x, y, isClick = false) {
+                trailParticles.push(new TrailParticle(x, y, isClick));
+                if (trailParticles.length > 200) {
+                    trailParticles.shift();
+                }
+            }
+
+            // 监听鼠标移动
+            window.addEventListener('mousemove', (e) => {
+                addHeart(e.clientX, e.clientY);
+                addHeart(e.clientX, e.clientY, true);
+                addTrailParticle(e.clientX, e.clientY);
             });
 
-            // 绘制和更新流星
-            shootingStars.forEach((star, index) => {
-                star.update();
-                star.draw(ctx);
+            // 监听鼠标点击
+            window.addEventListener('click', (e) => {
+                addHeart(e.clientX, e.clientY, true);
+                addTrailParticle(e.clientX, e.clientY, true);
             });
 
-            requestAnimationFrame(animate);
-        }
+            // 监听触摸移动（移动设备）
+            window.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                addHeart(touch.clientX, touch.clientY);
+                addHeart(touch.clientX, touch.clientY, true);
+                addTrailParticle(touch.clientX, touch.clientY);
+            }, { passive: true });
 
-        animate();
+            // 监听触摸点击（移动设备）
+            window.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                addHeart(touch.clientX, touch.clientY, true);
+                addTrailParticle(touch.clientX, touch.clientY, true);
+            });
+
+            // 动画循环
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // 绘制和更新爱心
+                hearts.forEach((heart, index) => {
+                    heart.update();
+                    if (!heart.isAlive()) {
+                        hearts.splice(index, 1);
+                    } else {
+                        heart.draw(ctx);
+                    }
+                });
+
+                // 绘制和更新轨迹粒子
+                trailParticles.forEach((particle, index) => {
+                    particle.update();
+                    if (!particle.isAlive()) {
+                        trailParticles.splice(index, 1);
+                    } else {
+                        particle.draw(ctx);
+                    }
+                });
+
+                // 绘制和更新流星
+                shootingStars.forEach((star, index) => {
+                    star.update();
+                    star.draw(ctx);
+                });
+
+                // 绘制和更新星星
+                stars.forEach((star, index) => {
+                    star.update();
+                    if (!star.isAlive()) {
+                        stars.splice(index, 1);
+                        stars.push(new Star());
+                    } else {
+                        star.draw(ctx);
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        })();
+
+        // 气泡动画控制
+        window.addEventListener('load', () => {
+            const container = document.getElementById('bubble-container');
+            const bubbles = container.querySelectorAll('.bubble');
+            const predictionResult = document.getElementById('prediction-result');
+
+            // 设定环绕预测结果的半径
+            const bubbleRadius = 250; // 增加半径以避开预测结果
+
+            const totalBubbles = bubbles.length;
+
+            // 预定义六个气泡的动画名称
+            const animationNames = ['moveBubble1', 'moveBubble2', 'moveBubble3', 'moveBubble4', 'moveBubble5', 'moveBubble6'];
+
+            // 为每个气泡分配预定义的动画
+            bubbles.forEach((bubble, index) => {
+                // 为每个气泡添加动画类和动画名称
+                setTimeout(() => {
+                    bubble.classList.add('animate');
+                    bubble.style.animationName = `${animationNames[index]}, rotateBubble`;
+                    bubble.style.animationDuration = '1.5s, 20s';
+                    bubble.style.animationFillMode = 'forwards, infinite';
+                    bubble.style.animationTimingFunction = 'ease, linear';
+                    bubble.style.animationDelay = `${0.3 * (index + 1)}s, 0s`; // 气泡动画延迟递增，旋转动画无延迟
+                }, 300 * (index + 1)); // 每个气泡的动画延迟递增
+            });
+
+            // 计算总动画时间（最长的动画延迟 + 动画持续时间）
+            const totalAnimationTime = 300 * totalBubbles + 1500; // 300ms * 气泡数量 + 动画持续时间
+
+            // 显示预测结果
+            setTimeout(() => {
+                predictionResult.classList.add('show');
+            }, totalAnimationTime);
+        });
+
+        // 生成星星粒子
+        (() => {
+            const starsContainer = document.getElementById('stars-container');
+
+            function createStarElement(star) {
+                const starEl = document.createElement('div');
+                starEl.classList.add('star');
+                starEl.style.width = `${star.size}px`;
+                starEl.style.height = `${star.size}px`;
+                starEl.style.left = `${star.x}px`;
+                starEl.style.top = `${star.y}px`;
+                starEl.style.opacity = star.opacity;
+                return starEl;
+            }
+
+            function updateStars() {
+                stars.forEach((star, index) => {
+                    star.update();
+                    if (!star.isAlive()) {
+                        stars.splice(index, 1);
+                        stars.push(new Star());
+                        starsContainer.appendChild(createStarElement(stars[stars.length - 1]));
+                    }
+                });
+
+                // 清空并重新添加星星元素
+                starsContainer.innerHTML = '';
+                stars.forEach(star => {
+                    starsContainer.appendChild(createStarElement(star));
+                });
+
+                requestAnimationFrame(updateStars);
+            }
+
+            updateStars();
+        })();
     </script>
 </body>
 </html>
-
