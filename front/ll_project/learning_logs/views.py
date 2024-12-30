@@ -7,8 +7,8 @@ import pandas as pd
 import joblib
 
 # 加载模型和Scaler
-model = joblib.load(r'E:\Predict\ll_project\learning_logs\xgb_model.pkl')
-scaler = joblib.load(r'E:\Predict\ll_project\learning_logs\scaler.pkl')
+model = joblib.load('../../back/model/xgb_model.pkl')
+scaler = joblib.load('../../back/model/scaler.pkl')
 
 # Create your views here.
 def index(request):
@@ -71,7 +71,7 @@ def process_final(year, fans, views, likes, coins, collects, part):
             new_user_df['num_parts'] = 1  # 如果没有独热编码的part，假设为1
 
         # e. 标准化数值特征
-        numerical_features = ['fans', 'likes', 'coins', 'collects', 'year',
+        numerical_features = ['fans', 'likes', 'views', 'coins', 'collects', 'year',
                               'likes_per_fan', 'coins_per_fan', 'collect_per_fan',
                               'total_interactions', 'num_parts']
 

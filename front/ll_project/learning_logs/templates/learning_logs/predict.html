@@ -1,93 +1,189 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>预测结果</title>
+    <!-- 引入Google字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* 全局样式 */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Noto Sans SC', sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            overflow: hidden; /* 隐藏canvas滚动条 */
+            position: relative;
             height: 100vh;
+            width: 100vw;
+            /* 动态渐变背景 */
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
         }
 
+        /* 动态渐变动画 */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Canvas样式 */
+        #background-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none; /* 让canvas不拦截鼠标事件 */
+        }
+
+        /* 容器样式 */
         .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             width: 100%;
             max-width: 600px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 26px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        p {
-            font-size: 18px;
-            color: #555;
-            margin: 10px 0;
-        }
-
-        .result {
-            font-size: 22px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-
-        .high-quality {
-            color: #28a745;  /* Green for high quality */
-        }
-
-        .low-quality {
-            color: #dc3545;  /* Red for low quality */
-        }
-
-        .data-item {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            padding: 15px;
-            text-align: left;
             box-sizing: border-box;
+            z-index: 1; /* 确保内容在canvas之上 */
+            margin: 50px auto;
+        }
+
+        /* 标题样式 */
+        .container h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333333;
+            font-size: 28px;
+        }
+
+        /* 数据项样式 */
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .data-item:hover {
+            background-color: #f1f1f1;
         }
 
         .data-item label {
-            font-weight: bold;
-            color: #333;
+            font-weight: 500;
+            color: #555555;
         }
 
         .data-item span {
-            color: #666;
+            color: #333333;
         }
 
+        /* 结果样式 */
+        .result {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .result p {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .result p:hover {
+            transform: scale(1.05);
+        }
+
+        /* 高质量结果样式：动态彩虹渐变 */
+        .high-quality {
+            background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff, #ff0000);
+            background-size: 1600% 1600%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbow-animation 10s ease infinite;
+        }
+
+        @keyframes rainbow-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 低质量结果样式 */
+        .low-quality {
+            background-color: #ffe6e6;
+            color: #cc0000;
+        }
+
+        /* 按钮样式 */
+        .back-button {
+            display: block;
+            margin: 30px auto 0;
+            padding: 12px 25px;
+            background-color: #007BFF;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            text-align: center;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .back-button:active {
+            transform: scale(0.98);
+        }
+
+        /* 响应式设计 */
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
-                width: 90%;
             }
 
-            h1 {
-                font-size: 22px;
+            .container h1 {
+                font-size: 24px;
             }
 
-            p {
+            .data-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .data-item label,
+            .data-item span {
                 font-size: 16px;
+            }
+
+            .result p {
+                font-size: 20px;
+            }
+
+            .back-button {
+                font-size: 14px;
+                padding: 10px 20px;
             }
         }
     </style>
 </head>
 <body>
+
+    <!-- Canvas用于动态背景效果 -->
+    <canvas id="background-canvas"></canvas>
 
     <div class="container">
         <h1>预测结果</h1>
@@ -131,7 +227,262 @@
                 <p class="low-quality">预测结果：再接再厉</p>
             {% endif %}
         </div>
+
+        <!-- 返回按钮 -->
+        <a href="javascript:history.back()" class="back-button">返回</a>
     </div>
 
+    <!-- JavaScript用于动态背景效果 -->
+    <script>
+        const canvas = document.getElementById('background-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 设置canvas大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 定义爱心类
+        class Heart {
+            constructor(x, y, isSpread = false) {
+                this.x = x;
+                this.y = y;
+                this.size = isSpread ? 10 : Math.random() * 20 + 10; // 基础爱心大小或扩散爱心初始大小
+                this.maxSize = isSpread ? 60 : 30; // 最大大小
+                this.growthRate = isSpread ? 1 : 0.5; // 增长速度
+                this.alpha = isSpread ? 0.5 : 0.8; // 初始透明度
+                this.fadeRate = isSpread ? 0.005 : 0.003; // 淡出速度
+                this.scale = 1;
+                this.scaleSpeed = 0.02; // 控制心跳效果的缩放速度
+                this.maxScale = 1.2; // 最大缩放比例
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = Math.random() * 0.02 - 0.01; // 随机旋转速度
+                // 使用粉色渐变
+                this.gradient = ctx.createRadialGradient(0, 0, this.size * 0.1, 0, 0, this.size);
+                this.gradient.addColorStop(0, 'rgba(255, 105, 180, 1)'); // 深粉色
+                this.gradient.addColorStop(1, 'rgba(255, 182, 193, 0)'); // 浅粉色透明
+            }
+
+            update() {
+                this.size += this.growthRate;
+                this.scale += this.scaleSpeed;
+                this.rotation += this.rotationSpeed;
+                this.alpha -= this.fadeRate;
+
+                // 反转缩放方向以实现心跳效果
+                if (this.scale >= this.maxScale || this.scale <= 1) {
+                    this.scaleSpeed *= -1;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scale, this.scale);
+                ctx.globalAlpha = this.alpha;
+
+                // 绘制心形路径
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size / 2);
+                ctx.bezierCurveTo(this.size / 2, -this.size * 1.5, this.size * 1.5, this.size / 2, 0, this.size);
+                ctx.bezierCurveTo(-this.size * 1.5, this.size / 2, -this.size / 2, -this.size * 1.5, 0, -this.size / 2);
+                ctx.closePath();
+                ctx.fillStyle = this.gradient;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            isAlive() {
+                return this.alpha > 0 && this.size < this.maxSize;
+            }
+        }
+
+        // 定义流星类
+        class ShootingStar {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                const startFromTop = Math.random() > 0.5;
+                this.x = startFromTop ? Math.random() * canvas.width : 0;
+                this.y = startFromTop ? 0 : Math.random() * canvas.height;
+                this.velocityX = Math.random() * 4 + (startFromTop ? 4 : 8);
+                this.velocityY = Math.random() * 4 + (startFromTop ? 8 : 4);
+                this.length = Math.random() * 150 + 50;
+                this.opacity = 1;
+                this.fadeRate = 0.02;
+                this.color = `hsl(${Math.random() * 360}, 100%, 90%)`;
+            }
+
+            update() {
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                this.opacity -= this.fadeRate;
+
+                if (this.x > canvas.width + this.length || this.y > canvas.height + this.length || this.opacity <= 0) {
+                    this.reset();
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.velocityX * (this.length / 100), this.y - this.velocityY * (this.length / 100));
+                ctx.stroke();
+
+                // 添加发光效果
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // 定义鼠标轨迹粒子类
+        class TrailParticle {
+            constructor(x, y, isClick = false) {
+                this.x = x;
+                this.y = y;
+                this.size = isClick ? Math.random() * 8 + 4 : Math.random() * 5 + 2; // 点击时增大粒子大小
+                this.alpha = isClick ? 0.9 : 0.7; // 点击时增加初始透明度
+                this.fadeRate = isClick ? 0.03 : 0.02; // 点击时增加淡出速度
+                // 使用淡粉色
+                this.color = `rgba(255, 105, 180, ${this.alpha})`;
+                // 粒子移动方向
+                this.velocity = {
+                    x: (Math.random() - 0.5) * (isClick ? 3 : 2), // 点击时增加速度
+                    y: (Math.random() - 0.5) * (isClick ? 3 : 2)
+                };
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.fadeRate;
+                this.color = `rgba(255, 105, 180, ${this.alpha})`;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            isAlive() {
+                return this.alpha > 0;
+            }
+        }
+
+        // 存储所有动画对象
+        const hearts = [];
+        const shootingStars = [];
+        const trailParticles = [];
+
+        // 定时生成流星
+        function generateShootingStar() {
+            shootingStars.push(new ShootingStar());
+            const time = Math.random() * 2000 + 2000;
+            setTimeout(generateShootingStar, time);
+        }
+
+        generateShootingStar();
+
+        // 动态添加爱心
+        function addHeart(x, y, isSpread = false) {
+            hearts.push(new Heart(x, y, isSpread));
+            if (hearts.length > 300) { // 总爱心数量限制
+                hearts.shift();
+            }
+        }
+
+        // 动态添加轨迹粒子
+        function addTrailParticle(x, y, isClick = false) {
+            trailParticles.push(new TrailParticle(x, y, isClick));
+            if (trailParticles.length > 200) { // 粒子数量限制
+                trailParticles.shift();
+            }
+        }
+
+        // 监听鼠标移动
+        window.addEventListener('mousemove', (e) => {
+            addHeart(e.clientX, e.clientY); // 添加基础爱心
+            addHeart(e.clientX, e.clientY, true); // 添加扩散爱心
+            addTrailParticle(e.clientX, e.clientY); // 添加普通轨迹粒子
+        });
+
+        // 监听鼠标点击
+        window.addEventListener('click', (e) => {
+            addHeart(e.clientX, e.clientY, true); // 添加扩散爱心
+            addTrailParticle(e.clientX, e.clientY, true); // 添加点击轨迹粒子
+        });
+
+        // 监听触摸移动（移动设备）
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            addHeart(touch.clientX, touch.clientY); // 添加基础爱心
+            addHeart(touch.clientX, touch.clientY, true); // 添加扩散爱心
+            addTrailParticle(touch.clientX, touch.clientY); // 添加普通轨迹粒子
+        }, { passive: true });
+
+        // 监听触摸点击（移动设备）
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            addHeart(touch.clientX, touch.clientY, true); // 添加扩散爱心
+            addTrailParticle(touch.clientX, touch.clientY, true); // 添加点击轨迹粒子
+        });
+
+        // 动画循环
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制和更新爱心
+            hearts.forEach((heart, index) => {
+                heart.update();
+                if (!heart.isAlive()) {
+                    hearts.splice(index, 1);
+                } else {
+                    heart.draw(ctx);
+                }
+            });
+
+            // 绘制和更新轨迹粒子
+            trailParticles.forEach((particle, index) => {
+                particle.update();
+                if (!particle.isAlive()) {
+                    trailParticles.splice(index, 1);
+                } else {
+                    particle.draw(ctx);
+                }
+            });
+
+            // 绘制和更新流星
+            shootingStars.forEach((star, index) => {
+                star.update();
+                star.draw(ctx);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
 </body>
 </html>
+
